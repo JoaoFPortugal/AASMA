@@ -1,114 +1,178 @@
 import sys
 
+from linprog import *
 
 
-# if there is more than one Nash equilibrium, the Nashwith the highest sum of payoffsshould be returned.
-#  If still undecidable the Nash corresponding to the task with lower index for your agent
-# and then for the peer agent should be returned
+def decideutil(firstarg, secarg):
+    try:
+        e = int(firstarg)
+        if e == 0:
+            return 1000000000000000000000000
+        else:
+            return float(secarg)
+    except ValueError:
+
+        firstarg = firstarg[:-1]
+        if int(firstarg) == 0:
+            return 100000000000000000000
+        return float(secarg)
 
 
+def findMinUtility(task):
+    a = calculatelistofsubtasks(task.getValue())
+    minutility = 1000000000
+    for values in a:
+        b = values.split('(')
+        c = b[1].split(',')
+        firstarg = c[0]
+        d = c[1].split(')')
+        secarg = d[0]
+        utility = decideutil(firstarg, secarg)
+        if (minutility > utility):
+            minutility = utility
 
-def test(test1, test2):
-
-    for el in test1:
-        if el in test2:
-            return False
-    return True
-
-
-def decide_nash(matrix):
-    print(matrix)
-    task = ''
-    minelist = findbestmine(matrix)
-    maxofmine = max(minelist[1])
-    test1 = minelist[0]
-    indexofmaxmine = minelist[0][minelist[1].index(maxofmine)]
-    peerlist = findbestpeer(matrix)
-    test2 = peerlist[0]
-
-    if(test(test1,test2)):
-        return "blank-decision"
-    maxofpeer = max(peerlist[1])
-    indexofmaxpeer = peerlist[0][peerlist[1].index(maxofpeer)]
-    if(maxofmine>= maxofpeer):
-        task = "mine=T" + str(indexofmaxpeer[0]) + ",peer=T" + str(indexofmaxpeer[1])
-    else:
-        task = "mine=T" + str(indexofmaxmine[0]) + ",peer=T" + str(indexofmaxmine[1])
+    return minutility
 
 
-    return task
+# maximizar T1x + T2y
 
-def findbestmine(matrix):
+# T1x + T2y > 0
+# x,y>=0
+# x,y<=1
+
+
+def createListofineq(param):
+    if param == 2:
+        return [[1, 0], [0, 1], [-1, 0], [0, -1]]
+
+    elif param == 3:
+        return [[1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], [0, -1, 0], [0, 0, -1]]
+
+    elif param == 4:
+        return [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0],
+                [0, 0, 0, -1]]
+
+
+def createTargetVals(param):
+    if param == 2:
+        return [1, 1, 0, 0]
+
+    if param == 3:
+        return [1, 1, 1, 0, 0, 0]
+
+    if param == 4:
+        return [1, 1, 1, 1, 0, 0, 0, 0]
+
+
+def createEquationLeft(count):
+    if count == 2:
+        return [[1, 1]]
+    if count == 3:
+        return [[1, 1, 1]]
+
+    if count == 4:
+        return [[1, 1, 1, 1]]
+
+
+def indices(mylist, value):
+    return [i for i, x in enumerate(mylist) if x == value]
+
+
+def divide(final, lst):
+    mylist = []
+    finale = []
+    indice = []
+    for el in lst:
+        indice = indices(lst, el)
+        if len(indice) > len(mylist):
+            if(len(indice) != 1):
+                mylist = indice
+
+
+    sizetodivideby = len(indice)
+    maxvalue = max(final)
     i=0
-    j=0
-    temp = [-100000000000000000000,-1000000000000000]
-    tempvalues = []
-    nashequilibria = -1
-    maxvalues = []
 
-    length = len(matrix[i])
-    while(j!=length):
-        while(i!=len(matrix)):
-            if(matrix[i][j][0]>=temp[0]):
-                temp=matrix[i][j]
-                tempvalues=[i,j]
-            i+=1
-        if (nashequilibria == -1):
-            nashequilibria = []
-            sum = 0
-            for el in temp:
-                sum += el
-            maxvalues.append(sum)
-            nashequilibria.append(tempvalues)
-        elif not tempvalues in nashequilibria:
-            sum = 0
-            for el in temp:
-                sum += el
-            maxvalues.append(sum)
-            nashequilibria.append(tempvalues)
-        temp = [-1000000000000000, -1000000000000]
-        i = 0
-        j += 1
-
-    return [nashequilibria,maxvalues]
-
-def findbestpeer(matrix):
-    i=0
-    j=0
-    temp = [-100000000000000000000,-1000000000000000]
-    tempvalues = []
-    nashequilibria = -1
-    maxvalues = []
-
-
-    while(i!=len(matrix)):
-        length = len(matrix[i])
-        while j!= length:
-            if matrix[i][j][1] >= temp[1]:
-                temp = matrix[i][j]
-                tempvalues = [i, j]
-
-            j += 1
-
-        if nashequilibria == -1:
-            nashequilibria = []
-            sum = 0
-            for el in temp:
-                sum += el
-            maxvalues.append(sum)
-            nashequilibria.append(tempvalues)
-
-        elif not tempvalues in nashequilibria:
-            sum = 0
-            for el in temp:
-                sum += el
-            maxvalues.append(sum)
-            nashequilibria.append(tempvalues)
-        temp=[-1000000000000000,-1000000000000]
-        j=0
+    if(mylist == []):
+        return final
+    for el in final:
+        print(el)
+        print(mylist)
+        if i in mylist:
+            finale.append(maxvalue/sizetodivideby)
+        else:
+            finale.append(el)
         i+=1
+    return finale
+def decide_risk(listoftasks):
 
-    return [nashequilibria,maxvalues]
+    lst = []
+    minlst = []
+    count = 0
+
+    for el in listoftasks:
+        utility = findMinUtility(el)
+        minlst.append(-utility)
+        count += 1
+
+    for el in listoftasks:
+        utility = calculatetotalutility(el.getValue())
+        lst.append(-utility)
+
+    listofineq = createListofineq(len(lst))
+    listoftargetvals = createTargetVals(len(lst))
+
+    listoftargetvals.append(0)
+    listofineq.append(minlst)
+
+    B = listoftargetvals
+    A = listofineq
+    C = lst
+
+    eqL = createEquationLeft(count)
+
+
+
+    resolution, sol = linsolve(C, ineq_left=A, ineq_right=B, eq_left=eqL, eq_right=[1])
+
+    if sol is None:
+        B = B[:-1]
+        A = A[:-1]
+        res, sol = linsolve(C, ineq_left=A, ineq_right=B, eq_left=eqL, eq_right=[1])
+
+    final = []
+    for el in sol:
+        el = round(el, 2)
+        final.append(el)
+
+    finalfinal = divide(final, lst)
+
+    task = '('
+    sizeo = len(finalfinal)
+
+
+
+    length = len(finalfinal)
+    j=0
+
+    while(j!=length):
+        finalfinal[j] = "{0:.2f}".format(float(finalfinal[j]))
+        j+=1
+
+    i=1
+
+    for el in finalfinal:
+        if not (el == "0.00"):
+            if not (i == sizeo):
+                if i == 1:
+                    task += str(el) + ",T" + str(i)
+                else:
+                    task += ";" + str(el) + ",T" + str(i)
+            else:
+                task += ";"+str(el) + ",T" + str(i)
+        i+=1
+    task += ")"
+    return task
 
 
 class Agent:
@@ -120,8 +184,15 @@ class Agent:
             tasks = self.parse(task)
             self.listoftasks = self.findtasks(tasks)
             self.last_task = None
-        elif self.behavior == "decide-nash":
+
+        elif self.behavior == "decide-nash" or self.behavior == "decide-mixed" or self.behavior == "decide-conditional":
             self.matrix = self.formMatrix(task)
+
+
+        elif self.behavior == "decide-risk":
+            task = task[:-2]
+            tasks = self.parse(task)
+            self.listoftasks = self.findtasks(tasks)
 
     def update(self, observation):
 
@@ -138,6 +209,20 @@ class Agent:
             return task
         elif behavior == "decide-nash":
             task = decide_nash(self.matrix)
+            return task
+
+        elif behavior == "decide-mixed":
+            task = decide_mixed(self.matrix)
+            return task
+
+        elif behavior == "decide-conditional":
+            task = decide_nash(self.matrix)
+            if task == "blank-decision":
+                return decide_mixed(self.matrix)
+            else:
+                return task
+        elif behavior == "decide-risk":
+            task = decide_risk(self.listoftasks)
             return task
         else:
             return '1'
@@ -177,7 +262,6 @@ class Agent:
         # senaoexistiremsubtasksadarupdate
         if not (hasnmbr):
             if "%" in value:
-
                 task.setValue("")
             if not (tasktoupdate in task.getValue()):
                 task.setValue(task.getValue() + ",")
@@ -192,12 +276,12 @@ class Agent:
                         value += tasktoupdate + "=" + "(1," + utility + ")"
                         task.setValue(value)
         else:
-            self.updatetask(tasktoupdate,task,utility)
+            self.updatetask(tasktoupdate, task, utility)
         pass
 
     # B = (1, [B1=(1, -4)])
 
-    def updatetask(self, tasktoupdate, task,utility):
+    def updatetask(self, tasktoupdate, task, utility):
         lst = tasktoupdate.split(".")
         value = ""
         subtaskl = lst[0]
@@ -207,7 +291,6 @@ class Agent:
         found = False
         listofel = []
 
-
         for el in subtasks:
             if subtaskl in el:
                 found = True
@@ -216,47 +299,48 @@ class Agent:
                 listofel += el
             listofel += ','
         listofel = listofel[:-1]
-        if not(found):
+        if not (found):
             for el in subtasks:
                 value += el
-            if value!= '':
-                value +=','
+            if value != '':
+                value += ','
             value += subtaskl + "=" + "(1, [" + subtaskv + "=(1, " + utility + ")])"
 
             task.setValue(value)
         else:
             prc = False
-            a = calculatelistofsubtasks(lastel)[0].split('(',1)
+            a = calculatelistofsubtasks(lastel)[0].split('(', 1)
             b = a[1]
-            c = b.split(',',1)
+            c = b.split(',', 1)
             d = c[0]
             hashh = c[1].split('[')
             hat = []
             if (prc):
                 pass
             else:
-                if not(len(hashh) <= 1):
+                if not (len(hashh) <= 1):
                     hat = hashh[1].split(']')
 
             var = ''.join(listofel)
             init = self.removepercentages(var)
-            if("%" in d):
+            if ("%" in d):
                 sumc = 1
-                value +=init
+                value += init
                 value += ","
-                value += subtaskl +"=" + "(" + str(sumc) + ",[" + subtaskv + "=(1, " + utility + ")])"
+                value += subtaskl + "=" + "(" + str(sumc) + ",[" + subtaskv + "=(1, " + utility + ")])"
 
             else:
-                value +=init
-                value +=","
-                sumc = int(d)+1
+                value += init
+                value += ","
+                sumc = int(d) + 1
                 if (subtaskv in c[1]):
                     print("shieeeeeeeeeeet need to do this")
                 else:
-                    value += subtaskl + "=" + "(" + str(sumc) + ",[" + hat[0] + ", " + subtaskv + "=(1, " + utility + ")])"
+                    value += subtaskl + "=" + "(" + str(sumc) + ",[" + hat[
+                        0] + ", " + subtaskv + "=(1, " + utility + ")])"
             task.setValue(value)
 
-   #A=(30%,0),B=(40%,[B1=(2,1),B2=(1,-1)]),
+    # A=(30%,0),B=(40%,[B1=(2,1),B2=(1,-1)]),
 
     def removepercentages(self, var):
 
@@ -264,22 +348,22 @@ class Agent:
         value = []
         found = False
         old = 0
-        i=0
-        j=0
-        while(i!=len(vari)):
-            if vari[i]== '(':
-                j = i+1
+        i = 0
+        j = 0
+        while (i != len(vari)):
+            if vari[i] == '(':
+                j = i + 1
             if vari[i] == '%':
                 old = i
-                del vari[j:old+1]
+                del vari[j:old + 1]
 
-            i+=1
-        i=0
+            i += 1
+        i = 0
         for e in vari:
             value += e
-            if(e == '(') and vari[i+1]==',':
-                value+='0'
-            i+=1
+            if (e == '(') and vari[i + 1] == ',':
+                value += '0'
+            i += 1
         a = "".join(value)
         d = calculatelistofsubtasks(a)
         finalvalue = ''
@@ -287,7 +371,7 @@ class Agent:
             if '(0,0)' in el:
                 pass
             else:
-                finalvalue +=el
+                finalvalue += el
         return finalvalue
 
     def formMatrix(self, task):
@@ -305,23 +389,27 @@ class Agent:
 
         x = [['x' for i in range(columns)] for j in range(rows)]
 
-        while(mine!=''):
+        # mine = T0|T0 = 2, T0|T1 = 5, T1|T0 = 3, T1|T1 = 7
+        # peer = T0|T0 = -1, T0|T1 = -2, T1|T0 = 4, T1|T1 = 6
+
+        '''
+        (-1,2)   (-2,3)
+        
+        (4,5)     (6,7)
+        
+        '''
+
+        while (mine != ''):
             a = removeelementfrommine(mine)
-            x = putinthematrix(a[0],x, a[2],a[3],'m')
+            x = putinthematrix(a[0], x, a[2], a[3], 'm')
             mine = a[1]
             b = removeelementfrompeer(peer)
-            x = putinthematrix(b[0],x, b[2],b[3],'p')
+            x = putinthematrix(b[0], x, b[2], b[3], 'p')
             peer = b[1]
-            if(mine==''):
+            if (mine == ''):
                 break
         return x
 
-    #decide - nash
-    #mine = (T0 | T0=[A=(2, 2)], T0 | T1 = [A = (1, 1)], T1 | T0 = [A = (1, 1)], T1 | T1 = [A = (1, 2)])
-    # peer = (T0 | T0=[A=(1, 2), B = (1, 0)], T0 | T1 = [A = (1, 2)], T1 | T0 = [A = (1, 2)], T1 | T1 = [A = (1, 1)])
-
-    #mine = (T0 | T0=[A=(1, 0)], T0 | T1 = [A = (1, 25)], T0 | T2 = [A = (1, 5)], T1 | T0 = [A = (1, 40)], T1 | T1 = [A = (1, 0)], T1 | T2 = [A = (1, 5)], T2 | T0 = [A = (1, 10)], T2 | T1 = [A = (1, 15)], T2 | T2 = [A = (1, 10)]),
-    #peer = (T0 | T0=[A=(1, 0)], T0 | T1 = [A = (1, 25)], T0 | T2 = [A = (1, 5)], T1 | T0 = [A = (1, 40)], T1 | T1 = [A = (1, 0)], T1 | T2 = [A = (1, 5)], T2 | T0 = [A = (1, 10)], T2 | T1 = [A = (1, 15)], T2 | T2 = [A = (1, 10)])
 
 class Task:
 
@@ -357,9 +445,9 @@ def decide_rational(listoftasks):
         if max_utility < utility:
             max_utility = utility
             max_utility_task = t.getName()
-    #for e in utilitiesfound:
-     #  print(e)
-    #print(t.getValue())
+    # for e in utilitiesfound:
+    #  print(e)
+    # print(t.getValue())
 
     return max_utility_task
 
@@ -463,15 +551,25 @@ def calculatetotalutility(t):
         final = totalutility / total
         return final
 
+        # mine = T0|T0 = 2, T0|T1 = 5, T1|T0 = 3, T1|T1 = 7
+        # peer = T0|T0 = -1, T0|T1 = -2, T1|T0 = 4, T1|T1 = 6
+
+
+'''
+        (-1,2)   (-2,3)
+
+        (4,5)     (6,7)
+
+'''
 
 
 def removeelementfrommine(mine):
-    i=0
-    j=0
+    i = 0
+    j = 0
 
     if "T0|T0" in mine:
         a = mine.split("T0|T0=[")
-        b = a[1].split("]",1)
+        b = a[1].split("]", 1)
         util = calculatetotalutility(b[0])
         return [util, b[1], 0, 0]
 
@@ -480,6 +578,7 @@ def removeelementfrommine(mine):
         b = a[1].split("]", 1)
         util = calculatetotalutility(b[0])
         return [util, b[1], 1, 0]
+
     if "T0|T2" in mine:
         a = mine.split("T0|T2=[")
         b = a[1].split("]", 1)
@@ -553,17 +652,17 @@ def removeelementfrommine(mine):
         util = calculatetotalutility(b[0])
         return [util, b[1], 3, 3]
 
-    return [0,'',0,0]
+    return [0, '', 0, 0]
+
 
 def removeelementfrompeer(peer):
-    i=0
-    j=0
-
+    i = 0
+    j = 0
 
     if "T0|T0" in peer:
         a = peer.split("T0|T0=[")
 
-        b = a[1].split("]",1)
+        b = a[1].split("]", 1)
         util = calculatetotalutility(b[0])
         return [util, b[1], 0, 0]
 
@@ -645,24 +744,191 @@ def removeelementfrompeer(peer):
         util = calculatetotalutility(b[0])
         return [util, b[1], 3, 3]
 
-    return [0,'',0,0]
+    return [0, '', 0, 0]
 
 
-
-def putinthematrix(util1, x,i,j,m):
-
+def putinthematrix(util1, x, i, j, m):
     if x[i][j] == 'x':
         x[i][j] = util1
     else:
         a = x[i][j]
-        if isinstance(a,list):
-            if(len(a)==2):
+        if isinstance(a, list):
+            if (len(a) == 2):
                 return x
-        if(m=='m'):
-            x[i][j] = [util1,a]
+        if (m == 'm'):
+            x[i][j] = [a, util1]
         else:
-            x[i][j] = [a,util1]
+            x[i][j] = [util1, a]
     return x
+
+
+def common(minelist, peerlist):
+    com = []
+    for el in minelist:
+        if el in peerlist:
+            com.append(el)
+    return com
+
+
+def pickbest(a, matrix):
+    max = -1000000000000
+    maxindexes = []
+
+    for el in a:
+        i = el[0]
+        j = el[1]
+        value = (matrix[i][j][0]) + (matrix[i][j][1])
+
+        if (value > max):
+            max = value
+            maxindexes = [i, j]
+
+        elif (value == max):
+
+            if j < maxindexes[1]:
+                maxindexes = [i, j]
+
+    return "mine=T" + str(maxindexes[1]) + ",peer=T" + str(maxindexes[0])
+
+
+def decide_nash(matrix):
+    minelist = findbestmine(matrix)
+    maxofmine = max(minelist[1])
+    indexofmaxmine = minelist[0][minelist[1].index(maxofmine)]
+    peerlist = findbestpeer(matrix)
+
+    a = common(minelist[0], peerlist[0])
+
+    if a == []:
+        return "blank-decision"
+
+    if (len(a) == 1):
+        return "mine=T" + str(a[0][1]) + ",peer=T" + str(a[0][0])
+
+    task = pickbest(a, matrix)
+
+    return task
+
+
+def findbestmine(matrix):
+    i = 0
+    j = 0
+    temp = [-100000000000000000000, -1000000000000000]
+    tempvalues = []
+    nashequilibria = []
+    maxvalues = []
+
+    while i != len(matrix):
+
+        length = len(matrix[i])
+
+        while j != length:
+            if matrix[i][j][1] > temp[1]:
+                temp = matrix[i][j]
+                tempvalues = [i, j]
+            j += 1
+
+        sum = 0
+
+        if tempvalues not in nashequilibria:
+            for el in temp:
+                sum += el
+            maxvalues.append(sum)
+            nashequilibria.append(tempvalues)
+
+        temp = [-1000000000000000, -1000000000000]
+        j = 0
+        i += 1
+    return [nashequilibria, maxvalues]
+
+
+def findbestpeer(matrix):
+    i = 0
+    j = 0
+    temp = [-100000000000000000000, -1000000000000000]
+    tempvalues = []
+    nashequilibria = []
+    maxvalues = []
+
+    length = len(matrix[0])
+
+    while (j != length):
+        while (i != len(matrix)):
+            if matrix[i][j][0] >= temp[0]:
+                temp = matrix[i][j]
+                tempvalues = [i, j]
+
+            i += 1
+        sum = 0
+        if tempvalues not in nashequilibria:
+            for el in temp:
+                sum += el
+            maxvalues.append(sum)
+            nashequilibria.append(tempvalues)
+
+        temp = [-1000000000000000, -1000000000000]
+        i = 0
+        j += 1
+
+    return [nashequilibria, maxvalues]
+
+
+def decide_mixed(matrix):
+    peervalues = getpeervalues(matrix)
+
+    if (peervalues == "blank-decision"):
+        return "blank-decision"
+
+    "{0:.2f}".format(13.949999999999999)
+    peervalues[0] = "{0:.2f}".format(float(peervalues[0]))
+    peervalues[1] = "{0:.2f}".format(float(peervalues[1]))
+
+    minevalues = getminevalues(matrix)
+
+    if (minevalues == "blank-decision"):
+        return "blank-decision"
+
+    minevalues[0] = "{0:.2f}".format(float(minevalues[0]))
+    minevalues[1] = "{0:.2f}".format(float(minevalues[1]))
+
+    return "mine=(" + str(minevalues[0]) + "," + str(minevalues[1]) + "),peer=(" + str(peervalues[0]) + "," + str(
+        peervalues[1]) + ")"
+
+
+def getpeervalues(matrix):
+    b1 = matrix[0][0][1]
+    b2 = matrix[0][1][1]
+    b3 = matrix[1][0][1]
+    b4 = matrix[1][1][1]
+
+    dividend = (b1 + b4 - b3 - b2)
+    if dividend == 0:
+        return "blank-decision"
+
+    value = (b4 - b3) / (b1 + b4 - b3 - b2)
+
+    if value > 1 or value < 0:
+        return "blank-decision"
+    else:
+        return [value, 1 - value]
+
+
+def getminevalues(matrix):
+    a1 = matrix[0][0][0]
+    a2 = matrix[0][1][0]
+    a3 = matrix[1][0][0]
+    a4 = matrix[1][1][0]
+
+    dividend = (a1 - a2 - a3 + a4)
+    if dividend == 0:
+        return "blank-decision"
+
+    value = (a4 - a2) / (a1 - a2 - a3 + a4)
+
+    if value > 1 or value < 0:
+        return "blank-decision"
+    else:
+        return [value, 1 - value]
 
 
 args = sys.stdin.readline().split(' ')
